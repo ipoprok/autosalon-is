@@ -1004,11 +1004,33 @@ function bindFeedbackForm(formId: string, feedbackId: string, text: string) {
   const feedback = document.querySelector<HTMLParagraphElement>(feedbackId)
   if (!form || !feedback) return
 
-  form.addEventListener('submit', (event) => {
+  form.addEventListener('submit', async (event) => {
     event.preventDefault()
-    form.reset()
-    feedback.textContent = text
-    feedback.classList.remove('hidden')
+    const formData = new FormData(form)
+    const fullName = String(formData.get('fullName') || '').trim()
+    const phone = String(formData.get('phone') || '').trim()
+    const email = String(formData.get('email') || '').trim()
+    const requestType = formId === '#testDriveForm' ? 'test-drive' : 'service'
+
+    try {
+      const response = await fetch('http://localhost:3001/api/service-requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestType, fullName, phone, email })
+      })
+
+      if (!response.ok) {
+        throw new Error('Save failed')
+      }
+
+      form.reset()
+      feedback.textContent = text
+      feedback.classList.remove('hidden')
+    } catch {
+      feedback.textContent =
+        'Не удалось сохранить заявку. Убедитесь, что backend запущен на http://localhost:3001.'
+      feedback.classList.remove('hidden')
+    }
   })
 }
 
